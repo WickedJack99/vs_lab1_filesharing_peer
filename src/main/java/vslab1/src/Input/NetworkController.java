@@ -1,8 +1,9 @@
 package vslab1.src.Input;
 
+import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.ServerSocket;
 import java.util.Enumeration;
 
 public class NetworkController {
@@ -29,13 +30,20 @@ public class NetworkController {
         return false;
     }
 
-    public static boolean isPortFree(int port) {
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-            // If the ServerSocket can be created without exception, the port is free
-            return true;
+    public static DatagramSocket tryBindToPort(String ipAddress, int port) {
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket(null);
+            // Allow socket to be bound even if address was recently in use
+            socket.setReuseAddress(true);
+            socket.bind(new InetSocketAddress(ipAddress, port));
         } catch (Exception e) {
-            // If an exception occurs, it means the port is already in use
-            return false;
+            System.out.println("Port: " + port + " is closed or not reachable on ip: " + ipAddress);
+            if (socket != null) {
+                socket.close();
+                socket = null;
+            }
         }
+        return socket;
     }
 }
