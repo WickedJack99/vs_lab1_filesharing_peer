@@ -24,7 +24,16 @@ public record SendFileReplyRequest(Peer sender, Peer receiver, String fileName, 
     @Override
     public void execute(SendingQueue sendingQueue) {
         System.out.println(fileName);
-        // TODO method that takes string and returns first 20byte....last 20byte
+        System.out.println(getFirstAndLast20Byte(fileContent));
     }
     
+    private String getFirstAndLast20Byte(String content) {
+        if (content.length() > 40) {
+            String first20Byte = content.substring(0, 20);
+            String last20Byte = content.substring(content.length() - 20, content.length());
+            return first20Byte + "...." + last20Byte;
+        } else {
+            return content;
+        }
+    }
 }
