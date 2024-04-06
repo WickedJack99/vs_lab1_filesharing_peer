@@ -1,7 +1,10 @@
 package vslab1.src.Request.Data;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+
+import vslab1.src.Constants;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Sending.Data.EDataType;
@@ -32,7 +35,7 @@ public record PublishFileNameNotificationRequest(Peer sender, Peer receiver, Str
         String senderIpPort = sender.ipAddress() + ":" + sender.port();
 
         try {
-            FileReader reader = new FileReader("./src/main/resources/peers.json");
+            FileReader reader = new FileReader(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
             // Parse JSON file into a JSONObject
             JSONObject peerFileAsJSONObject = new JSONObject(new JSONTokener(reader));
             reader.close();
@@ -45,7 +48,7 @@ public record PublishFileNameNotificationRequest(Peer sender, Peer receiver, Str
                 }
             });
 
-            FileWriter writer = new FileWriter("./src/main/resources/peers.json");
+            FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
             // Writes the modified object back to the file.
             writer.write(peerFileAsJSONObject.toString());
             writer.close();
