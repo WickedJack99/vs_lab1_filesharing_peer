@@ -1,8 +1,17 @@
 package vslab1.src.FileReaderWriter;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import vslab1.src.Constants;
 import vslab1.src.Peers.EOnlineState;
@@ -10,9 +19,9 @@ import vslab1.src.Peers.Peer;
 
 public class FileReaderWriter {
 
-    public enum EUpdated {
-        NotUpdated,
-        Updated
+    public enum EUpdateFlag {
+        Update,
+        DoNotUpdate
     }
 
     private static Peer thisPeerBuffer = null;
@@ -45,6 +54,7 @@ public class FileReaderWriter {
                 try {
                     Files.createFile(peerFilePath);
                     System.out.println("Created " + Constants.PEERCONFIGFILENAME + " file.");
+                    writeInitialInfoToConfigFile();
                 } catch (IOException e) {
                     System.out.println("Failed to create " + Constants.PEERCONFIGFILENAME + " file.");
                     e.printStackTrace();
@@ -53,34 +63,72 @@ public class FileReaderWriter {
         }
     }
 
-    public static Peer getThisPeer(EUpdated updateState) {
-        switch (updateState) {
-            case NotUpdated: {
-                if (thisPeerBuffer == null) {
-                    return getThisPeer(EUpdated.Updated);
-                } else {
-                    return thisPeerBuffer;
-                }   
-            }
-            case Updated: {
-                return updateThisPeerBufferFromFile();
-            }
-            default: {
-                System.err.println("Unknown peer update type.");
-                return null;
-            }
-        }  
+    private static void writeInitialInfoToConfigFile() {
+        try {
+            FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+            writer.write(Constants.PEERCONFIGFILEINITIALCONTENT);
+            writer.close();
+            System.out.println("Initialized config file.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    private static synchronized Peer updateThisPeerBufferFromFile() {
-        // TODO unimplemented
-        // read from file this peers data
-        
-        
-        String ipAddress = null;
-        int port = 5000;
-        thisPeerBuffer = new Peer(ipAddress, port, null, EOnlineState.Online); // change to valid data once implemented
-        return thisPeerBuffer;
+    public static synchronized Peer getThisPeer(EUpdateFlag update) {
+        if (update == EUpdateFlag.Update) {
+            try {
+                FileReader reader = new FileReader(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+                JSONObject peerFileAsJSONObject = new JSONObject(new JSONTokener(reader));
+                reader.close();
+                JSONObject thisPeer = peerFileAsJSONObject.getJSONObject("peer");
+                String ipAddress = thisPeer.getString("ipAddress");
+                int port = thisPeer.getInt("port");
+                thisPeerBuffer = new Peer(ipAddress, port, null, EOnlineState.Online);
+                return thisPeerBuffer;
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        } else {
+            return thisPeerBuffer;
+        }
+    }
+
+    public static List<Peer> getPeers() {
+        try {
+            List<Peer> peersList = new LinkedList<Peer>();
+            FileReader reader = new FileReader(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+            JSONObject peerFileAsJSONObject = new JSONObject(new JSONTokener(reader));
+            reader.close();
+            JSONArray peersJSONArray = peerFileAsJSONObject.getJSONArray("peers");
+
+            peersJSONArray.forEach((peer) -> {
+                JSONObject peerJSONObject = (JSONObject)peer;
+                String peerIPAddress = peerJSONObject.getString("ipAddress");
+                int peerPort = peerJSONObject.getInt("port");
+                List<String> peerFilesList = new LinkedList<String>();
+                JSONArray peerFiles = peerJSONObject.getJSONArray("files");
+                peerFiles.forEach((file) -> {
+                    peerFilesList.add((String)file);
+                });
+                String onlineState = peerJSONObject.getString("onlineState");
+                if (onlineState.equals("online")) {
+                    peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Online));
+                } else if (onlineState.equals("offline")) {
+                    peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Offline));
+                } else {
+                    peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Unknown));
+                }
+            });
+            return peersList;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static synchronized void updatePeerList(Peer updatedPeer) {
