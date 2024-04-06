@@ -12,9 +12,9 @@ import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Sending.Data.OnlineStateRequest;
 import vslab1.src.Sending.Data.PublishFileNameNotification;
+import vslab1.src.Sending.Data.PullFileRequest;
 import vslab1.src.Timeout.JobList;
 import vslab1.src.Timeout.TimeoutJob;
-import vslab1.src.Timeout.TimeoutThread;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -119,19 +119,23 @@ public class InputThread extends Thread implements Terminatable {
                                     String[] pathParts = inputArgs[1].split(File.separator);
                                     String fileName = pathParts[pathParts.length-1];
 
-                                    // Add file to own list.
-                                    Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.Update);
-                                    thisPeer.addFile(fileName, inputArgs[1]);
-                                    FileReaderWriter.updatePeer(thisPeer);
+                                    if (FileReaderWriter.hasFile(fileName) == null) {
+                                        // Add file to own list.
+                                        Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.Update);
+                                        thisPeer.addFile(fileName, inputArgs[1]);
+                                        FileReaderWriter.updatePeer(thisPeer);
 
-                                    // Notify all peers about file.
-                                    List<Peer> peers = FileReaderWriter.getPeers();
-                                    peers.forEach((peer) -> {
-                                        Peer peerObject = (Peer)peer;
-                                        if (peerObject.onlineState() == EOnlineState.Online) {
-                                            sendingQueue.add(new PublishFileNameNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peerObject, fileName));
-                                        }
-                                    });
+                                        // Notify all peers about file.
+                                        List<Peer> peers = FileReaderWriter.getPeers();
+                                        peers.forEach((peer) -> {
+                                            Peer peerObject = (Peer)peer;
+                                            if (peerObject.onlineState() == EOnlineState.Online) {
+                                                sendingQueue.add(new PublishFileNameNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peerObject, fileName));
+                                            }
+                                        });
+                                    } else {
+                                        System.err.println("Error, file already exists.");
+                                    }                                    
                                 }
                             }
                         }break;
@@ -144,6 +148,17 @@ public class InputThread extends Thread implements Terminatable {
                                 // check which peer has file
                                 // send get message to that peer
                                 // if own file, just print
+                                Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate);
+                                Peer peerThatHasFile = FileReaderWriter.hasFile(inputArgs[1]);
+
+                                if (thisPeer.equals(peerThatHasFile)) {
+                                    System.out.println("File name: " + inputArgs[1]);
+                                    System.out.println("File content: " + FileReaderWriter.getFirstAndLast20Byte(FileReaderWriter.readFile(thisPeer.filesMap().get(inputArgs[1]))));
+                                } else if (peerThatHasFile == null) {
+                                    System.err.println("File not found.");
+                                } else {
+                                    sendingQueue.add(new PullFileRequest(thisPeer, peerThatHasFile, inputArgs[1]));
+                                }
                             }
                         }break;
                         default: {
@@ -161,4 +176,6 @@ public class InputThread extends Thread implements Terminatable {
         inputThreadRunning = false;
         this.interrupt();
     }
+
+   
 }
