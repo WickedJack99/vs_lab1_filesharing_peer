@@ -1,5 +1,6 @@
 package vslab1.src.FileReaderWriter;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -276,6 +277,49 @@ public class FileReaderWriter {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static Peer hasFile(String fileName) {
+        Peer thisPeer = getThisPeer(EUpdateFlag.Update);
+        if (thisPeer.filesMap().containsKey(fileName)) {
+            return thisPeer;
+        } else {
+            List<Peer> peers = getPeers();
+            for (Peer peer : peers) {
+                if (peer.filesMap().containsKey(fileName)) {
+                    return peer;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String readFile(String filePath) {
+        try {
+            StringBuilder stringBuilder = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line).append("\n");
+            }
+            reader.close();
+            return stringBuilder.toString();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String getFirstAndLast20Byte(String content) {
+        if (content.length() > 40) {
+            String first20Byte = content.substring(0, 20);
+            String last20Byte = content.substring(content.length() - 20, content.length());
+            return first20Byte + "...." + last20Byte;
+        } else {
+            return content;
         }
     }
 }
