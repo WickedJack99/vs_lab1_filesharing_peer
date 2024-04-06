@@ -5,9 +5,22 @@
 package vslab1.src.Input;
 
 import vslab1.src.Terminatable;
-import vslab1.src.Peers.PeerOrganizer;
+import vslab1.src.FileReaderWriter.FileReaderWriter;
+import vslab1.src.FileReaderWriter.FileReaderWriter.EUpdateFlag;
+import vslab1.src.Peers.EOnlineState;
+import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
+import vslab1.src.Sending.Data.OnlineStateRequest;
+import vslab1.src.Sending.Data.PublishFileNameNotification;
+import vslab1.src.Timeout.JobList;
+import vslab1.src.Timeout.TimeoutJob;
+import vslab1.src.Timeout.TimeoutThread;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Scanner;
 
 public class InputThread extends Thread implements Terminatable {
@@ -17,20 +30,25 @@ public class InputThread extends Thread implements Terminatable {
     private Terminatable receiverThread;
     private Terminatable senderThread;
     private Terminatable requestExecuterThread;
+    private Terminatable timeoutThread;
 
     private SendingQueue sendingQueue;
 
-    private PeerOrganizer peerOrganizer = new PeerOrganizer();
-
     private boolean inputThreadRunning = true;
 
-    public InputThread(Scanner inputScanner, Terminatable senderThread, Terminatable receiverThread, Terminatable requestExecuterThread, SendingQueue sendingQueue) {
+    private JobList jobList = null;
+
+    public InputThread(Scanner inputScanner, Terminatable senderThread, Terminatable receiverThread, Terminatable requestExecuterThread, Terminatable timeoutThread, SendingQueue sendingQueue, JobList jobList) {
         this.inputScanner = inputScanner;
         
         this.senderThread = senderThread;
         this.receiverThread = receiverThread;
         this.requestExecuterThread = requestExecuterThread;
+        this.timeoutThread = timeoutThread;
+
         this.sendingQueue = sendingQueue;
+
+        this.jobList = jobList;
     }
 
     @Override
@@ -40,7 +58,7 @@ public class InputThread extends Thread implements Terminatable {
             try {
                 System.out.println("Enter command:");
                 String userInput = inputScanner.nextLine();
-                String[] inputArgs = userInput.split(":");
+                String[] inputArgs = userInput.split(" ");
                 
                 if (inputArgs.length >= 1) {
                     String command = inputArgs[0];
@@ -59,15 +77,32 @@ public class InputThread extends Thread implements Terminatable {
                             if (requestExecuterThread != null) {
                                 requestExecuterThread.terminate();
                             }
+                            if (timeoutThread != null) {
+                                timeoutThread.terminate();
+                            }
                             this.terminate();
                         }break;
                         case "ShowNodes": {
-                            // TODO send onlineStateRequests to all peers in json file
-                            // Start timeouts for all requests
-                            // Update online states according to received, timeouted messages
+                            List<Peer> peers = FileReaderWriter.getPeers();
+                            peers.forEach((peer) -> {
+                                sendingQueue.add(new OnlineStateRequest(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peer));
+                                // Start timeout which after 3 seconds sets status of specific peer to offline.
+                                jobList.add(new TimeoutJob(System.currentTimeMillis(), peer));
+                            });
                         }break;
                         case "ShowFiles": {
-                            // Display own files information of jsons
+                            Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.Update);
+                            System.out.println("Files on system: " + thisPeer.ipAddress() + ":" + thisPeer.port());
+                            thisPeer.filesMap().forEach((fileName, filePath) -> {
+                                System.out.println(fileName + " @ path:" + filePath);
+                            });
+                            List<Peer> peers = FileReaderWriter.getPeers();
+                            peers.forEach((peer) -> {
+                                System.out.println("Files on system: " + peer.ipAddress() + ":" + peer.port());
+                                peer.filesMap().forEach((fileName, filePath) -> {
+                                    System.out.println(fileName + " @ path:" + filePath);
+                                });
+                            });
                         }break;
                         case "PublishFile": {
                             if (inputArgs.length < 2) {
@@ -75,9 +110,29 @@ public class InputThread extends Thread implements Terminatable {
                             } else if (inputArgs.length > 2) {
                                 System.err.println("Too many arguments.");
                             } else {
-                                // get list of online peers from json
-                                // for each peer online send publish file name
-                                //sendingQueue.add(new PublishFileNameNotification(peerOrganizer.getLocalPeer(), null, command));
+                                // Check if file path exists.
+                                Path peerFilePath = Paths.get(inputArgs[1]);
+                                if (!Files.exists(peerFilePath)) {
+                                    System.err.println("File path doesn't exist.");
+                                } else {
+                                    // If path exists, extract last element, which will be the file name.
+                                    String[] pathParts = inputArgs[1].split(File.separator);
+                                    String fileName = pathParts[pathParts.length-1];
+
+                                    // Add file to own list.
+                                    Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.Update);
+                                    thisPeer.addFile(fileName, inputArgs[1]);
+                                    FileReaderWriter.updatePeer(thisPeer);
+
+                                    // Notify all peers about file.
+                                    List<Peer> peers = FileReaderWriter.getPeers();
+                                    peers.forEach((peer) -> {
+                                        Peer peerObject = (Peer)peer;
+                                        if (peerObject.onlineState() == EOnlineState.Online) {
+                                            sendingQueue.add(new PublishFileNameNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peerObject, fileName));
+                                        }
+                                    });
+                                }
                             }
                         }break;
                         case "GetFile": {
