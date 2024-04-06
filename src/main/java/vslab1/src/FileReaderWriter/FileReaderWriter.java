@@ -6,8 +6,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -83,7 +85,15 @@ public class FileReaderWriter {
                 JSONObject thisPeer = peerFileAsJSONObject.getJSONObject("peer");
                 String ipAddress = thisPeer.getString("ipAddress");
                 int port = thisPeer.getInt("port");
-                thisPeerBuffer = new Peer(ipAddress, port, null, EOnlineState.Online);
+                JSONArray filesArray = thisPeer.getJSONArray("files");
+                Map<String, String> filesMap = new HashMap<String, String>();
+                filesArray.forEach((file) -> {
+                    JSONObject fileInfo = (JSONObject)file;
+                    String fileName = fileInfo.getString("fileName");
+                    String filePath = fileInfo.getString("filePath");
+                    filesMap.put(fileName, filePath);
+                });
+                thisPeerBuffer = new Peer(ipAddress, port, filesMap, EOnlineState.Online);
                 return thisPeerBuffer;
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -108,10 +118,13 @@ public class FileReaderWriter {
                 JSONObject peerJSONObject = (JSONObject)peer;
                 String peerIPAddress = peerJSONObject.getString("ipAddress");
                 int peerPort = peerJSONObject.getInt("port");
-                List<String> peerFilesList = new LinkedList<String>();
+                Map<String, String> peerFilesList = new HashMap<String, String>();
                 JSONArray peerFiles = peerJSONObject.getJSONArray("files");
                 peerFiles.forEach((file) -> {
-                    peerFilesList.add((String)file);
+                    JSONObject fileInfo = (JSONObject)file;
+                    String fileName = fileInfo.getString("fileName");
+                    String filePath = fileInfo.getString("filePath");
+                    peerFilesList.put(fileName, filePath);
                 });
                 String onlineState = peerJSONObject.getString("onlineState");
                 if (onlineState.equals("online")) {
@@ -131,7 +144,138 @@ public class FileReaderWriter {
         return null;
     }
 
-    public static synchronized void updatePeerList(Peer updatedPeer) {
-        // TODO update peer list
+    public static synchronized void updatePeer(Peer peerToUpdate) {
+        try {
+            FileReader reader = new FileReader(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+            JSONObject peerFileAsJSONObject = new JSONObject(new JSONTokener(reader));
+            reader.close();
+
+            JSONObject peerJSONObject = peerFileAsJSONObject.getJSONObject("peer");
+            JSONArray peersJSONArray = peerFileAsJSONObject.getJSONArray("peers");
+
+            if (peerJSONObject.getString("ipAddress").equals(peerToUpdate.ipAddress()) && (peerJSONObject.getInt("port") == peerToUpdate.port())) {
+                if (peerToUpdate.onlineState() == EOnlineState.Online) {
+                    peerJSONObject.put("onlineStatus", "online");
+                } else if (peerToUpdate.onlineState() == EOnlineState.Offline) {
+                    peerJSONObject.put("onlineStatus", "offline");
+                } else {
+                    peerJSONObject.put("onlineStatus", "unknown");
+                }
+                
+                if (peerToUpdate.filesMap() != null) {
+                    peerToUpdate.filesMap().forEach((fileName, filePath) -> {
+                        boolean fileExists = false;
+                        
+                        for (Object file : peerJSONObject.getJSONArray("files")) {
+                            JSONObject fileObject = (JSONObject)file;
+                            if (fileObject.getString("fileName") == fileName) {
+                                fileObject.put("filePath", filePath);
+                                fileExists = true;
+                                break;
+                            }
+                        }
+    
+                        if (fileExists == false) {
+                            JSONObject fileInfo = new JSONObject();
+                            fileInfo.put("fileName", fileName);
+                            fileInfo.put("filePath", filePath);
+                            peerJSONObject.append("files", fileInfo);
+                        }
+                    });
+                }
+
+                peerFileAsJSONObject.put("peer", peerJSONObject);
+                FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+                // Writes the modified object back to the file.
+                writer.write(peerFileAsJSONObject.toString());
+                writer.close();
+                getThisPeer(EUpdateFlag.Update);
+                return;
+            } else if (peerJSONObject.getString("ipAddress").equals("") && (peerJSONObject.getInt("port") == 0)){
+                peerJSONObject.put("ipAddress", peerToUpdate.ipAddress());
+                peerJSONObject.put("port", peerToUpdate.port());
+
+                if (peerToUpdate.onlineState() == EOnlineState.Online) {
+                    peerJSONObject.put("onlineStatus", "online");
+                } else if (peerToUpdate.onlineState() == EOnlineState.Offline) {
+                    peerJSONObject.put("onlineStatus", "offline");
+                } else {
+                    peerJSONObject.put("onlineStatus", "unknown");
+                }
+                
+                if (peerToUpdate.filesMap() != null) {
+                    peerToUpdate.filesMap().forEach((fileName, filePath) -> {
+                        boolean fileExists = false;
+                        
+                        for (Object file : peerJSONObject.getJSONArray("files")) {
+                            JSONObject fileObject = (JSONObject)file;
+                            if (fileObject.getString("fileName") == fileName) {
+                                fileObject.put("filePath", filePath);
+                                fileExists = true;
+                                break;
+                            }
+                        }
+    
+                        if (fileExists == false) {
+                            JSONObject fileInfo = new JSONObject();
+                            fileInfo.put("fileName", fileName);
+                            fileInfo.put("filePath", filePath);
+                            peerJSONObject.append("files", fileInfo);
+                        }
+                    });
+                }
+                
+                peerFileAsJSONObject.put("peer", peerJSONObject);
+                FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+                // Writes the modified object back to the file.
+                writer.write(peerFileAsJSONObject.toString());
+                writer.close();
+                getThisPeer(EUpdateFlag.Update);
+                return;
+            } else {
+                peersJSONArray.forEach((peer) -> {
+                    JSONObject peerObject = (JSONObject)peer;
+                    if (peerObject.getString("ipAddress").equals(peerToUpdate.ipAddress()) && (peerObject.getInt("port") == peerToUpdate.port())) {
+                        if (peerToUpdate.onlineState() == EOnlineState.Online) {
+                            peerObject.put("onlineStatus", "online");
+                        } else if (peerToUpdate.onlineState() == EOnlineState.Offline) {
+                            peerObject.put("onlineStatus", "offline");
+                        } else {
+                            peerObject.put("onlineStatus", "unknown");
+                        }
+
+                        peerToUpdate.filesMap().forEach((fileName, filePath) -> {
+                            boolean fileExists = false;
+                            
+                            for (Object file : peerObject.getJSONArray("files")) {
+                                JSONObject fileObject = (JSONObject)file;
+                                if (fileObject.getString("fileName") == fileName) {
+                                    fileObject.put("filePath", filePath);
+                                    fileExists = true;
+                                    break;
+                                }
+                            }
+        
+                            if (fileExists == false) {
+                                JSONObject fileInfo = new JSONObject();
+                                fileInfo.put("fileName", fileName);
+                                fileInfo.put("filePath", filePath);
+                                peerObject.append("files", fileInfo);
+                            }
+                        });
+                    }
+                });
+
+                peerFileAsJSONObject.put("peers", peersJSONArray);
+                FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
+                // Writes the modified object back to the file.
+                writer.write(peerFileAsJSONObject.toString());
+                writer.close();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
