@@ -63,8 +63,6 @@ public class InputThread extends Thread implements Terminatable {
                 if (inputArgs.length >= 1) {
                     String command = inputArgs[0];
 
-                    System.out.println(command);
-
                     switch (command) {
                         case "exit": {
                             // Terminates sender thread, receiver thread and this thread.
