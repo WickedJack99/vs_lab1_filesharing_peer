@@ -245,25 +245,27 @@ public class FileReaderWriter {
                             peerObject.put("onlineStatus", "unknown");
                         }
 
-                        peerToUpdate.filesMap().forEach((fileName, filePath) -> {
-                            boolean fileExists = false;
-                            
-                            for (Object file : peerObject.getJSONArray("files")) {
-                                JSONObject fileObject = (JSONObject)file;
-                                if (fileObject.getString("fileName") == fileName) {
-                                    fileObject.put("filePath", filePath);
-                                    fileExists = true;
-                                    break;
+                        if (peerToUpdate.filesMap() != null) {
+                            peerToUpdate.filesMap().forEach((fileName, filePath) -> {
+                                boolean fileExists = false;
+                                
+                                for (Object file : peerObject.getJSONArray("files")) {
+                                    JSONObject fileObject = (JSONObject)file;
+                                    if (fileObject.getString("fileName") == fileName) {
+                                        fileObject.put("filePath", filePath);
+                                        fileExists = true;
+                                        break;
+                                    }
                                 }
-                            }
-        
-                            if (fileExists == false) {
-                                JSONObject fileInfo = new JSONObject();
-                                fileInfo.put("fileName", fileName);
-                                fileInfo.put("filePath", filePath);
-                                peerObject.append("files", fileInfo);
-                            }
-                        });
+            
+                                if (fileExists == false) {
+                                    JSONObject fileInfo = new JSONObject();
+                                    fileInfo.put("fileName", fileName);
+                                    fileInfo.put("filePath", filePath);
+                                    peerObject.append("files", fileInfo);
+                                }
+                            });
+                        }
                     }
                 });
 
