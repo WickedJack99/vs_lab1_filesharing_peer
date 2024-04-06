@@ -13,4 +13,8 @@ public record Peer(String ipAddress, int port, Map<String, String> filesMap, EOn
             filesMap.put(fileName, filePath);
         }
     }
+
+    public boolean equals(Peer other) {
+        return this.ipAddress.equals(other.ipAddress) && (this.port == other.port);
+    }
 }
