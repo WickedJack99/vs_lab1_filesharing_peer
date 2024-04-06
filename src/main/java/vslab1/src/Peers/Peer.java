@@ -4,13 +4,13 @@
 
 package vslab1.src.Peers;
 
-import java.util.List;
+import java.util.Map;
 
-public record Peer(String ipAddress, int port, List<String> fileList, EOnlineState onlineState) {
+public record Peer(String ipAddress, int port, Map<String, String> filesMap, EOnlineState onlineState) {
 
-    public void addFile(String fileName) {
-        if (!fileList.contains(fileName)) {
-            fileList.add(fileName);
+    public void addFile(String fileName, String filePath) {
+        if (!filesMap.containsKey(fileName)) {
+            filesMap.put(fileName, filePath);
         }
     }
 }
