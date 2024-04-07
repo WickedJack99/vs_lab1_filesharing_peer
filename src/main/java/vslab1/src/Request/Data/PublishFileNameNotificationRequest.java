@@ -1,21 +1,13 @@
 package vslab1.src.Request.Data;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import vslab1.src.Constants;
 import vslab1.src.FileReaderWriter.FileReaderWriter;
 import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Sending.Data.EDataType;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 
 public record PublishFileNameNotificationRequest(Peer sender, Peer receiver, String fileName) implements Requestable {
 
