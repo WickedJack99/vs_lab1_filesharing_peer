@@ -33,15 +33,14 @@ public class FileReaderWriter {
      * Creates directories at given path and file where info about this and other peers is getting stored.
      * @param filesPath the path where to find or create the info files.
      */
-    public static void createInfoFilesIfNotExisting(String filesPath) {
+    public static synchronized void createInfoFilesIfNotExisting(String filesPath) {
         Path path = Paths.get(filesPath);
         boolean validPath = true;
         if (!Files.exists(path)) {
             try {
                 Files.createDirectories(path);
-                System.out.println("Directories created successfully.");
             } catch (Exception e) {
-                System.out.println("Failed to create directories: " + e.getMessage());
+                System.err.println("Failed to create directories: " + e.getMessage());
                 validPath = false;
             }
         }
@@ -56,22 +55,20 @@ public class FileReaderWriter {
             if (!Files.exists(peerFilePath)) {
                 try {
                     Files.createFile(peerFilePath);
-                    System.out.println("Created " + Constants.PEERCONFIGFILENAME + " file.");
                     writeInitialInfoToConfigFile();
                 } catch (IOException e) {
-                    System.out.println("Failed to create " + Constants.PEERCONFIGFILENAME + " file.");
+                    System.err.println("Failed to create " + Constants.PEERCONFIGFILENAME + " file.");
                     e.printStackTrace();
                 }
             }
         }
     }
 
-    private static void writeInitialInfoToConfigFile() {
+    private static synchronized void writeInitialInfoToConfigFile() {
         try {
             FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
             writer.write(Constants.PEERCONFIGFILEINITIALCONTENT);
             writer.close();
-            System.out.println("Initialized config file.");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -107,35 +104,39 @@ public class FileReaderWriter {
         }
     }
 
-    public static List<Peer> getPeers() {
+    public static synchronized List<Peer> getPeers() {
         try {
             List<Peer> peersList = new LinkedList<Peer>();
             FileReader reader = new FileReader(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
             JSONObject peerFileAsJSONObject = new JSONObject(new JSONTokener(reader));
             reader.close();
             JSONArray peersJSONArray = peerFileAsJSONObject.getJSONArray("peers");
-
-            peersJSONArray.forEach((peer) -> {
-                JSONObject peerJSONObject = (JSONObject)peer;
-                String peerIPAddress = peerJSONObject.getString("ipAddress");
-                int peerPort = peerJSONObject.getInt("port");
-                Map<String, String> peerFilesList = new HashMap<String, String>();
-                JSONArray peerFiles = peerJSONObject.getJSONArray("files");
-                peerFiles.forEach((file) -> {
-                    JSONObject fileInfo = (JSONObject)file;
-                    String fileName = fileInfo.getString("fileName");
-                    String filePath = fileInfo.getString("filePath");
-                    peerFilesList.put(fileName, filePath);
+            if (peersJSONArray != null) {
+                peersJSONArray.forEach((peer) -> {
+                    JSONObject peerJSONObject = (JSONObject)peer;
+                    String peerIPAddress = peerJSONObject.getString("ipAddress");
+                    int peerPort = peerJSONObject.getInt("port");
+                    Map<String, String> peerFilesList = new HashMap<String, String>();
+                    JSONArray peerFiles = peerJSONObject.getJSONArray("files");
+                    if (peerFiles != null) {
+                        peerFiles.forEach((file) -> {
+                            JSONObject fileInfo = (JSONObject)file;
+                            String fileName = fileInfo.getString("fileName");
+                            String filePath = fileInfo.getString("filePath");
+                            peerFilesList.put(fileName, filePath);
+                        });
+                    }
+                    String onlineState = peerJSONObject.getString("onlineStatus");
+                    if (onlineState.equals("online")) {
+                        peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Online));
+                    } else if (onlineState.equals("offline")) {
+                        peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Offline));
+                    } else {
+                        peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Unknown));
+                    }
                 });
-                String onlineState = peerJSONObject.getString("onlineState");
-                if (onlineState.equals("online")) {
-                    peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Online));
-                } else if (onlineState.equals("offline")) {
-                    peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Offline));
-                } else {
-                    peersList.add(new Peer(peerIPAddress, peerPort, peerFilesList, EOnlineState.Unknown));
-                }
-            });
+            }
+            
             return peersList;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -234,7 +235,9 @@ public class FileReaderWriter {
                 getThisPeer(EUpdateFlag.Update);
                 return;
             } else {
-                peersJSONArray.forEach((peer) -> {
+                boolean containsPeer = false;
+
+                for (Object peer : peersJSONArray) {
                     JSONObject peerObject = (JSONObject)peer;
                     if (peerObject.getString("ipAddress").equals(peerToUpdate.ipAddress()) && (peerObject.getInt("port") == peerToUpdate.port())) {
                         if (peerToUpdate.onlineState() == EOnlineState.Online) {
@@ -266,8 +269,17 @@ public class FileReaderWriter {
                                 }
                             });
                         }
+                        containsPeer = true;
                     }
-                });
+                }
+
+                if (containsPeer == false) {
+                    JSONObject peerObject = new JSONObject(
+                        "{\"ipAddress\":\"" + peerToUpdate.ipAddress() + 
+                        "\",\"port\":" + peerToUpdate.port() + 
+                        ",\"files\":[],\"onlineStatus\":\"offline\"}");
+                    peersJSONArray.put(peerObject);
+                }
 
                 peerFileAsJSONObject.put("peers", peersJSONArray);
                 FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
@@ -303,7 +315,7 @@ public class FileReaderWriter {
             BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
             String line;
             while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line).append("\n");
+                stringBuilder.append(line + " ");
             }
             reader.close();
             return stringBuilder.toString();
