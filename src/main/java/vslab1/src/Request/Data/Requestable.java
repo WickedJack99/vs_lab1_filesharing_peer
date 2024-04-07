@@ -1,3 +1,6 @@
+/**
+ * @author Aaron Moser
+ */
 package vslab1.src.Request.Data;
 
 import vslab1.src.Peers.Peer;

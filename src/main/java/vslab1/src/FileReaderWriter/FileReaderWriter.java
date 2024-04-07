@@ -1,3 +1,6 @@
+/**
+ * @author Aaron Moser
+ */
 package vslab1.src.FileReaderWriter;
 
 import java.io.BufferedReader;

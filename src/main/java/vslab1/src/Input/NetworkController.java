@@ -1,3 +1,6 @@
+/**
+ * @author Aaron Moser
+ */
 package vslab1.src.Input;
 
 import java.net.DatagramSocket;

@@ -1,3 +1,6 @@
+/**
+ * @author Aaron Moser
+ */
 package vslab1.src.Timeout;
 
 import vslab1.src.Terminatable;
