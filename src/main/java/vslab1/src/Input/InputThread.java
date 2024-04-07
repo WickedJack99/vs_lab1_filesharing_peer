@@ -83,22 +83,27 @@ public class InputThread extends Thread implements Terminatable {
                         case "ShowNodes": {
                             List<Peer> peers = FileReaderWriter.getPeers();
                             peers.forEach((peer) -> {
-                                sendingQueue.add(new OnlineStateRequest(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peer));
-                                // Start timeout which after 3 seconds sets status of specific peer to offline.
-                                jobList.add(new TimeoutJob(System.currentTimeMillis(), peer));
+                                if (peer.onlineState() != EOnlineState.Online) {
+                                    sendingQueue.add(new OnlineStateRequest(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peer));
+                                    // Start timeout which after 3 seconds sets status of specific peer to offline.
+                                    jobList.add(new TimeoutJob(System.currentTimeMillis(), peer));
+                                } else {
+                                    System.out.println("Peer @ " + peer.ipAddress() + ":" + peer.port() + " online");
+                                }
                             });
+                            
                         }break;
                         case "ShowFiles": {
                             Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.Update);
                             System.out.println("Files on system: " + thisPeer.ipAddress() + ":" + thisPeer.port());
                             thisPeer.filesMap().forEach((fileName, filePath) -> {
-                                System.out.println(fileName + " @ path:" + filePath);
+                                System.out.println("-> " + fileName + " @ path:" + filePath);
                             });
                             List<Peer> peers = FileReaderWriter.getPeers();
                             peers.forEach((peer) -> {
                                 System.out.println("Files on system: " + peer.ipAddress() + ":" + peer.port());
                                 peer.filesMap().forEach((fileName, filePath) -> {
-                                    System.out.println(fileName + " @ path:" + filePath);
+                                    System.out.println("-> " + fileName + " @ path:" + filePath);
                                 });
                             });
                         }break;
@@ -127,9 +132,7 @@ public class InputThread extends Thread implements Terminatable {
                                         List<Peer> peers = FileReaderWriter.getPeers();
                                         peers.forEach((peer) -> {
                                             Peer peerObject = (Peer)peer;
-                                            if (peerObject.onlineState() == EOnlineState.Online) {
-                                                sendingQueue.add(new PublishFileNameNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peerObject, fileName));
-                                            }
+                                            sendingQueue.add(new PublishFileNameNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peerObject, fileName));
                                         });
                                     } else {
                                         System.err.println("Error, file already exists.");
@@ -159,8 +162,21 @@ public class InputThread extends Thread implements Terminatable {
                                 }
                             }
                         }break;
+                        case "AddPeer": {
+                            if (inputArgs.length < 3) {
+                                System.err.println("Too few arguments.");
+                            } else if (inputArgs.length > 3) {
+                                System.err.println("Too many arguments.");
+                            } else {
+                                String ipAddress = inputArgs[1];
+                                int port = Integer.valueOf(inputArgs[2]);
+
+                                FileReaderWriter.updatePeer(new Peer(ipAddress, port, null, EOnlineState.Unknown));
+                                FileReaderWriter.getThisPeer(EUpdateFlag.Update);
+                            }
+                        }break;
                         default: {
-                            System.out.println("Unknown command.");
+                            System.err.println("Unknown command.");
                         }break;
                     }
                 }
