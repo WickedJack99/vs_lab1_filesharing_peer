@@ -45,15 +45,13 @@ public class RequestExecuterThread extends Thread implements Terminatable {
             try {
                 ReceivedData receivedData = receivingQueue.take();
 
-                JSONObject receivedDataAsJSONObject = new JSONObject(receivedData.data());
-
-                Requestable request = toRequestable(receivedDataAsJSONObject, jobList);
+                Requestable request = toRequestable(receivedData.interpretAsJSONObject(), jobList);
                 if (request != null) {
                     request.execute(sendingQueue);
                 }
 
             } catch (InterruptedException e) {
-                System.out.println("Error, receiving queue was interrupted. Terminating (this) request executer thread..");
+                System.err.println("Error, receiving queue was interrupted. Terminating (this) request executer thread..");
                 this.terminate();
             }
         }
@@ -65,37 +63,39 @@ public class RequestExecuterThread extends Thread implements Terminatable {
     }
 
     private static Requestable toRequestable(JSONObject receivedData, JobList jobList) {
-        if (receivedData.has("onlineState")) {
-            String onlineState = receivedData.getString("onlineState");
-            switch (onlineState) {
-                case "": {
-                    return new OnlineStateNotificationRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), jobList);
-                }
-                case "online": {
-                    return new OnlineStateRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate));
-                }
-                default: {
-                    System.err.println("Unknown online state.");
-                    return null;
+        if (receivedData != null) {
+            if (receivedData.has("onlineState")) {
+                String onlineState = receivedData.getString("onlineState");
+                switch (onlineState) {
+                    case "": {
+                        return new OnlineStateNotificationRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), jobList);
+                    }
+                    case "online": {
+                        return new OnlineStateRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate));
+                    }
+                    default: {
+                        System.err.println("Unknown online state.");
+                        return null;
+                    }
                 }
             }
-        }
-        if (receivedData.has("pullFileList")) {
-            return new PullFileListRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
-        }
-        if (receivedData.has("publishFileName")) {
-            String fileName = receivedData.getString("publishFileName");
-            return new PublishFileNameNotificationRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), fileName);
-        }
-        if (receivedData.has("pullFile")) {
-            String fileName = receivedData.getString("pullFile");
-            return new PullFileRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), fileName);
-        }
-        if (receivedData.has("sendFile")) {
-            String fileContent = receivedData.getString("sendFile");
-            String fileName = receivedData.getString("fileName");
-
-            return new SendFileReplyRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), fileName, fileContent);
+            if (receivedData.has("pullFileList")) {
+                return new PullFileListRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
+            }
+            if (receivedData.has("publishFileName")) {
+                String fileName = receivedData.getString("publishFileName");
+                return new PublishFileNameNotificationRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), fileName);
+            }
+            if (receivedData.has("pullFile")) {
+                String fileName = receivedData.getString("pullFile");
+                return new PullFileRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), fileName);
+            }
+            if (receivedData.has("sendFile")) {
+                String fileContent = receivedData.getString("sendFile");
+                String fileName = receivedData.getString("fileName");
+    
+                return new SendFileReplyRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), fileName, fileContent);
+            }
         }
         return null;
     }
