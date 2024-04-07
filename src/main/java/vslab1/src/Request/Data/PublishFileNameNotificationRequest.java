@@ -3,8 +3,12 @@ package vslab1.src.Request.Data;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 import vslab1.src.Constants;
+import vslab1.src.FileReaderWriter.FileReaderWriter;
+import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Sending.Data.EDataType;
@@ -32,29 +36,11 @@ public record PublishFileNameNotificationRequest(Peer sender, Peer receiver, Str
 
     @Override
     public void execute(SendingQueue sendingQueue) {
-        String senderIpPort = sender.ipAddress() + ":" + sender.port();
-
-        try {
-            FileReader reader = new FileReader(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
-            // Parse JSON file into a JSONObject
-            JSONObject peerFileAsJSONObject = new JSONObject(new JSONTokener(reader));
-            reader.close();
-            JSONArray peers = peerFileAsJSONObject.getJSONArray("peers");
-            // Goes through json array and inserts new file at element that matches ip and port.
-            peers.forEach((peer) -> {
-                JSONObject peerAsJSONObject = (JSONObject)peer;
-                if ((peerAsJSONObject).getString("ipPort").equals(senderIpPort)) {
-                    peerAsJSONObject.append("files", fileName);
-                }
-            });
-
-            FileWriter writer = new FileWriter(Constants.PEERCONFIGFILEPATH + File.separator + Constants.PEERCONFIGFILENAME);
-            // Writes the modified object back to the file.
-            writer.write(peerFileAsJSONObject.toString());
-            writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Map<String, String> fileToAdd = new HashMap<String, String>();
+        // Filepath is empty since this peer doesn't know paths only file names of other peers.
+        fileToAdd.put(fileName, "");
+        Peer peerToUpdate = new Peer(sender.ipAddress(), sender.port(), fileToAdd, EOnlineState.Online);
+        FileReaderWriter.updatePeer(peerToUpdate);
     }
     
 }
