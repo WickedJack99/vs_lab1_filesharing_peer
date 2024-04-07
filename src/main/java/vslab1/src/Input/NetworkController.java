@@ -38,7 +38,7 @@ public class NetworkController {
             socket.setReuseAddress(true);
             socket.bind(new InetSocketAddress(ipAddress, port));
         } catch (Exception e) {
-            System.out.println("Port: " + port + " is closed or not reachable on ip: " + ipAddress);
+            System.err.println("Port: " + port + " is closed or not reachable on ip: " + ipAddress);
             if (socket != null) {
                 socket.close();
                 socket = null;

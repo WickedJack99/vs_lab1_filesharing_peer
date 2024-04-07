@@ -42,11 +42,11 @@ public class SenderThread extends Thread implements Terminatable {
                     ds.send(dp);
                 }
             } catch (UnknownHostException e) {
-                System.out.println("Error, host is unknown or unreachable.");
+                System.err.println("Error, host is unknown or unreachable.");
             } catch (IOException e) {
-                System.out.println("Error, wasn't able to send data, because of problem with socket.");
+                System.err.println("Error, wasn't able to send data, because of problem with socket.");
             } catch (InterruptedException e) {
-                System.out.println("Error, sending queue was interrupted. Terminating (this) sending thread..");
+                System.err.println("Error, sending queue was interrupted. Terminating (this) sending thread..");
                 this.terminate();
             }
         }
