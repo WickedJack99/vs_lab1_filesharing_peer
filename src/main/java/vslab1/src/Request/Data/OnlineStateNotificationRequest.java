@@ -5,6 +5,7 @@ import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Sending.Data.EDataType;
+import vslab1.src.Sending.Data.OnlineStateNotification;
 import vslab1.src.Timeout.JobList;
 
 public record OnlineStateNotificationRequest(Peer sender, Peer receiver, JobList jobList) implements Requestable {
@@ -26,8 +27,8 @@ public record OnlineStateNotificationRequest(Peer sender, Peer receiver, JobList
 
     @Override
     public void execute(SendingQueue sendingQueue) {
-        
         FileReaderWriter.updatePeer(new Peer(sender.ipAddress(), sender.port(), null, EOnlineState.Online));
+        sendingQueue.add(new OnlineStateNotification(receiver, sender));
     }
     
 }

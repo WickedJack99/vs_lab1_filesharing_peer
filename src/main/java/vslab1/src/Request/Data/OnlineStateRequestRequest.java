@@ -24,8 +24,7 @@ public record OnlineStateRequestRequest(Peer sender, Peer receiver) implements R
 
     @Override
     public void execute(SendingQueue sendingQueue) {
-        // This is receiver and wants to notify the sender about its online state.
-        sendingQueue.add(new OnlineStateNotification(receiver, sender));
+        System.out.println("Peer @ " + sender.ipAddress() + ":" + sender.port() + " online");
     }
     
 }
