@@ -27,10 +27,10 @@ public class ReceiverThread extends Thread implements Terminatable {
 
     @Override
     public void run() {
-        byte[] receiveBuffer = new byte[65535];
         DatagramPacket datagramPacket = null;
 
         while (receiverThreadRunning) {
+            byte[] receiveBuffer = new byte[65535];
             datagramPacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
             try {
                 datagramSocket.receive(datagramPacket);
