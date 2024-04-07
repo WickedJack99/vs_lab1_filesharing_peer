@@ -43,22 +43,9 @@ public record PullFileRequestRequest(Peer sender, Peer receiver, String fileName
         if (!Files.exists(path)) {
             System.err.println("File path doesn't exist.");
         } else {
-            try {
-                //Write content to String and send data via sendingqueue to requesting peer
-                StringBuilder stringBuilder = new StringBuilder();
-                BufferedReader reader = new BufferedReader(new FileReader(new File(filePath)));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    stringBuilder.append(line).append("\n");
-                }
-                reader.close();
-                String fileContent = stringBuilder.toString();
-                sendingQueue.add(new SendFileReply(thisPeer, sender, fileContent, fileName));
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            //Write content to String and send data via sendingqueue to requesting peer
+            String fileContent = FileReaderWriter.readFile(filePath);
+            sendingQueue.add(new SendFileReply(thisPeer, sender, fileContent, fileName));
         }
     }
 }
