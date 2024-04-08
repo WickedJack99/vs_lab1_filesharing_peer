@@ -8,6 +8,11 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
+import java.util.Scanner;
+
+import vslab1.src.FileReaderWriter.FileReaderWriter;
+import vslab1.src.Peers.EOnlineState;
+import vslab1.src.Peers.Peer;
 
 public class NetworkController {
     public static boolean hasNetworkInterfaceWithIP(String ipAddressAsString) {
@@ -48,5 +53,40 @@ public class NetworkController {
             }
         }
         return socket;
+    }
+
+    /**
+     * Asks user to enter ip and port until those are valid and applicable and creates a DatagramSocket with given values.
+     * @return a DatagramSocket with ip and port specified by user input.
+     */
+    public static DatagramSocket getSocket(Scanner inputScanner) {
+        DatagramSocket datagramSocket = null;
+        boolean receivedValidIP = false;
+        boolean receivedValidAndFreePort = false;
+        String localIpAddress = null;
+        int localPort = -1;
+        // User has to enter a valid ip.
+        while (!receivedValidIP) {
+            System.out.println("Enter ip:");
+            localIpAddress = inputScanner.nextLine();
+            receivedValidIP = NetworkController.hasNetworkInterfaceWithIP(localIpAddress);
+            if (!receivedValidIP) {
+                System.err.println("Error: IP is not valid for this system. Please re-enter.");
+            }
+        }
+        // User has to enter a valid port.
+        while (!receivedValidAndFreePort) {
+            System.out.println("Enter port:");
+            String localPortAsString = inputScanner.nextLine();
+            localPort = Integer.valueOf(localPortAsString);
+            datagramSocket = NetworkController.tryBindToPort(localIpAddress, localPort);
+            if (datagramSocket == null) {
+                System.err.println("Error: Port is not available for this ip. Please re-enter.");
+            } else {
+                receivedValidAndFreePort = true;
+            }
+        }
+        FileReaderWriter.updatePeer(new Peer(localIpAddress, localPort, null, EOnlineState.Online));
+        return datagramSocket;
     }
 }
