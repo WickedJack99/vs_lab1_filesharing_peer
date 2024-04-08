@@ -11,12 +11,12 @@ Available commands:
 
 > ShowFiles
 
-> PublishFile <filepath>
+> PublishFile "filepath"
 
-> GetFile <filename>
+> GetFile "filename"
 
-> AddPeer <ip> <port>
+> AddPeer "ip" "port"
 
-> exit
+> exit // Not working
 
 Important note: not encrypted!
