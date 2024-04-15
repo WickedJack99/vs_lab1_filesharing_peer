@@ -7,6 +7,7 @@ package vslab1.src.Input;
 import vslab1.src.Terminatable;
 import vslab1.src.FileReaderWriter.FileReaderWriter;
 import vslab1.src.FileReaderWriter.FileReaderWriter.EUpdateFlag;
+import vslab1.src.Input.Commands.ExitCommand;
 import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
@@ -20,6 +21,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -64,7 +67,9 @@ public class InputThread extends Thread implements Terminatable {
                     String command = inputArgs[0];
 
                     switch (command) {
-                        case "exit": {
+                        case "Exit": {
+                            Terminatable[] threadsArray = {senderThread, receiverThread, requestExecuterThread, timeoutThread, this};
+                            new ExitCommand(null).execute();
                             // Terminates sender thread, receiver thread and this thread.
                             if (senderThread != null) {
                                 senderThread.terminate();
@@ -175,13 +180,20 @@ public class InputThread extends Thread implements Terminatable {
                                 FileReaderWriter.getThisPeer(EUpdateFlag.Update);
                             }
                         }break;
+                        case "Help": {
+                            if (inputArgs.length > 1) {
+                                System.err.println("Too many arguments.");
+                            } else {
+                                
+                            }
+                        }break;
                         default: {
                             System.err.println("Unknown command.");
                         }break;
                     }
                 }
             } catch (Exception e) {
-
+                
             }            
         }
     }

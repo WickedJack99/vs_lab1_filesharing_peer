@@ -18,12 +18,15 @@ import vslab1.src.Sending.SenderThread;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Timeout.JobList;
 import vslab1.src.Timeout.TimeoutThread;
+import vslab1.src.View.MainFrame;
 
 public class Main {
     public static void main(String[] args) {
         Scanner inputScanner = new Scanner(System.in);
 
         FileReaderWriter.createInfoFilesIfNotExisting(Constants.PEERCONFIGFILEPATH);
+
+        MainFrame frame = new MainFrame();
 
         DatagramSocket datagramSocket = NetworkController.getSocket(inputScanner);
 
