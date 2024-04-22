@@ -11,8 +11,12 @@ import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Receiving.ReceivedData;
 import vslab1.src.Receiving.ReceivingQueue;
-import vslab1.src.Request.Data.OnlineStateNotificationRequest;
+import vslab1.src.Request.Data.ReceivedJoinRequest;
+import vslab1.src.Request.Data.ReceivedLeaveNotification;
+import vslab1.src.Request.Data.ReceivedOnlineStateNotification;
 import vslab1.src.Request.Data.OnlineStateRequestRequest;
+import vslab1.src.Request.Data.ReceivedPeerJoinedNotification;
+import vslab1.src.Request.Data.ReceivedPeerResponse;
 import vslab1.src.Request.Data.PublishFileNameNotificationRequest;
 import vslab1.src.Request.Data.PullFileListRequestRequest;
 import vslab1.src.Request.Data.PullFileRequestRequest;
@@ -21,6 +25,7 @@ import vslab1.src.Request.Data.SendFileReplyRequest;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Timeout.JobList;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class RequestExecuterThread extends Thread implements Terminatable {
@@ -68,7 +73,7 @@ public class RequestExecuterThread extends Thread implements Terminatable {
                 String onlineState = receivedData.getString("onlineState");
                 switch (onlineState) {
                     case "": {
-                        return new OnlineStateNotificationRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), jobList);
+                        return new ReceivedOnlineStateNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), jobList);
                     }
                     case "online": {
                         return new OnlineStateRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate));
@@ -78,6 +83,19 @@ public class RequestExecuterThread extends Thread implements Terminatable {
                         return null;
                     }
                 }
+            }
+            if (receivedData.has("join")) {
+                return new ReceivedJoinRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
+            }
+            if (receivedData.has("peerJoined")) {
+                return new ReceivedPeerJoinedNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
+            }
+            if (receivedData.has("peer")) {
+                JSONArray files = receivedData.getJSONArray("files");
+                return new ReceivedPeerResponse(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), files);
+            }
+            if (receivedData.has("leave")) {
+                return new ReceivedLeaveNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate));
             }
             if (receivedData.has("pullFileList")) {
                 return new PullFileListRequestRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
