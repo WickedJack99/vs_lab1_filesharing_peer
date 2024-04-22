@@ -1,12 +1,12 @@
 package vslab1.src.Request.Data;
 
 import vslab1.src.FileReaderWriter.FileReaderWriter;
-import vslab1.src.FileReaderWriter.FileReaderWriter.EUpdateFlag;
 import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
 import vslab1.src.Sending.Data.EDataType;
 import vslab1.src.Sending.Data.PeerJoinedNotification;
+import vslab1.src.Sending.Data.PeerNotification;
 
 /**
  * Received join request will trigger an update of peer that wants to join this 
@@ -31,10 +31,16 @@ public record ReceivedJoinRequest(Peer sender, Peer receiver) implements Request
 
     @Override
     public void execute(SendingQueue sendingQueue) {
-        FileReaderWriter.updatePeer(new Peer(sender.ipAddress(), sender.port(), null, EOnlineState.Online));
-
+        Peer newPeer = new Peer(sender.ipAddress(), sender.port(), null, EOnlineState.Online);
+        FileReaderWriter.updatePeer(newPeer);
+        // Send own information back to new peer.
+        sendingQueue.add(new PeerNotification(receiver, newPeer));
+        // Notify other peers except the new peer about the new peer, which joined the network.
         FileReaderWriter.getPeers().forEach((peer) -> {
-            sendingQueue.add(new PeerJoinedNotification(peer, FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate)));
+            // Except the new peer
+            if (!peer.equals(newPeer)) {
+                sendingQueue.add(new PeerJoinedNotification(newPeer, peer));
+            }
         });
     }
     

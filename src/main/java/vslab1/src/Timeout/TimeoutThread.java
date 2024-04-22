@@ -31,8 +31,8 @@ public class TimeoutThread extends Thread implements Terminatable {
                     String ipAddress = timeoutJob.peerToWaitFor().ipAddress();
                     int port = timeoutJob.peerToWaitFor().port();
                     Peer unreachablePeer = new Peer(ipAddress, port, null, EOnlineState.Offline);
-                    FileReaderWriter.updatePeer(unreachablePeer);
-                    System.out.println("Peer unreachable. IP: " + unreachablePeer.ipAddress() + " Port: " + unreachablePeer.port());
+                    //FileReaderWriter.updatePeer(unreachablePeer);
+                    jobQueue.remove(timeoutJob);
                 }
             }
         }
