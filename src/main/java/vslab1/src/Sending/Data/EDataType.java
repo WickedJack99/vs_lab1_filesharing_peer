@@ -10,5 +10,9 @@ public enum EDataType {
     PullFileListRequest,
     PublishFileNameNotification,
     PullFileRequest,
-    SendFileReply
+    SendFileReply,
+    JoinRequest,
+    PeerJoinedNotification,
+    PeerNotification,
+    LeaveNotification
 }
