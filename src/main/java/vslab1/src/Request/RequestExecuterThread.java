@@ -16,7 +16,7 @@ import vslab1.src.Request.Data.ReceivedLeaveNotification;
 import vslab1.src.Request.Data.ReceivedOnlineStateNotification;
 import vslab1.src.Request.Data.OnlineStateRequestRequest;
 import vslab1.src.Request.Data.ReceivedPeerJoinedNotification;
-import vslab1.src.Request.Data.ReceivedPeerResponse;
+import vslab1.src.Request.Data.ReceivedPeerNotification;
 import vslab1.src.Request.Data.PublishFileNameNotificationRequest;
 import vslab1.src.Request.Data.PullFileListRequestRequest;
 import vslab1.src.Request.Data.PullFileRequestRequest;
@@ -92,7 +92,7 @@ public class RequestExecuterThread extends Thread implements Terminatable {
             }
             if (receivedData.has("peer")) {
                 JSONArray files = receivedData.getJSONArray("files");
-                return new ReceivedPeerResponse(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), files);
+                return new ReceivedPeerNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), files);
             }
             if (receivedData.has("leave")) {
                 return new ReceivedLeaveNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate));
