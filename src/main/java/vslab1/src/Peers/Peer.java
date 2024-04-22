@@ -17,4 +17,21 @@ public record Peer(String ipAddress, int port, Map<String, String> filesMap, EOn
     public boolean equals(Peer other) {
         return this.ipAddress.equals(other.ipAddress) && (this.port == other.port);
     }
+
+    public String onlineStateToString() {
+        switch (onlineState) {
+            case Online: {
+                return "online";
+            }
+            case Offline: {
+                return "offline";
+            }
+            case Unknown: {
+                return "unknown";
+            }
+            default: {
+                return "undefined";
+            }
+        }
+    }
 }
