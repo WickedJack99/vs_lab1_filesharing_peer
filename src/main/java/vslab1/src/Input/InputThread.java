@@ -10,6 +10,8 @@ import vslab1.src.FileReaderWriter.FileReaderWriter.EUpdateFlag;
 import vslab1.src.Peers.EOnlineState;
 import vslab1.src.Peers.Peer;
 import vslab1.src.Sending.SendingQueue;
+import vslab1.src.Sending.Data.JoinRequest;
+import vslab1.src.Sending.Data.LeaveNotification;
 import vslab1.src.Sending.Data.OnlineStateRequest;
 import vslab1.src.Sending.Data.PublishFileNameNotification;
 import vslab1.src.Sending.Data.PullFileRequest;
@@ -62,9 +64,14 @@ public class InputThread extends Thread implements Terminatable {
                 
                 if (inputArgs.length >= 1) {
                     String command = inputArgs[0];
-
                     switch (command) {
-                        case "exit": {
+                        case "Exit": {
+                            List<Peer> peers = FileReaderWriter.getPeers();
+                            peers.forEach((peer) -> {
+                                if (peer.onlineState() == EOnlineState.Online) {
+                                    sendingQueue.add(new LeaveNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peer));
+                                }
+                            });
                             // Terminates sender thread, receiver thread and this thread.
                             if (senderThread != null) {
                                 senderThread.terminate();
@@ -80,6 +87,37 @@ public class InputThread extends Thread implements Terminatable {
                             }
                             this.terminate();
                         }break;
+                        case "Join": {
+                            if (inputArgs.length < 3) {
+                                System.err.println("Too few arguments.");
+                            } else if (inputArgs.length > 3) {
+                                System.err.println("Too many arguments.");
+                            } else {
+                                String ip = inputArgs[1];
+                                try {
+                                    int port = Integer.parseInt(inputArgs[2]);
+                                    Peer friend = new Peer(ip, port, null, EOnlineState.Unknown);
+                                    sendingQueue.add(new JoinRequest(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), friend));
+                                    jobList.add(new TimeoutJob(System.currentTimeMillis(), friend));
+                                } catch (Exception e) {
+                                    System.err.println("Exception parsing port. Please reenter command.");
+                                }
+                            }
+                        }break;
+                        case "Leave": {
+                            if (inputArgs.length < 1) {
+                                System.err.println("Too few arguments.");
+                            } else if (inputArgs.length > 1) {
+                                System.err.println("Too many arguments.");
+                            } else {
+                                List<Peer> peers = FileReaderWriter.getPeers();
+                                peers.forEach((peer) -> {
+                                    if (peer.onlineState() == EOnlineState.Online) {
+                                        sendingQueue.add(new LeaveNotification(FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), peer));
+                                    }
+                                });
+                            }
+                        }break;
                         case "ShowNodes": {
                             List<Peer> peers = FileReaderWriter.getPeers();
                             peers.forEach((peer) -> {
@@ -90,8 +128,7 @@ public class InputThread extends Thread implements Terminatable {
                                 } else {
                                     System.out.println("Peer @ " + peer.ipAddress() + ":" + peer.port() + " online");
                                 }
-                            });
-                            
+                            });   
                         }break;
                         case "ShowFiles": {
                             Peer thisPeer = FileReaderWriter.getThisPeer(EUpdateFlag.Update);
@@ -119,7 +156,7 @@ public class InputThread extends Thread implements Terminatable {
                                     System.err.println("File path doesn't exist.");
                                 } else {
                                     // If path exists, extract last element, which will be the file name.
-                                    String[] pathParts = inputArgs[1].split(File.separator);
+                                    String[] pathParts = inputArgs[1].split(FileReaderWriter.getFileSeparatorRegex());
                                     String fileName = pathParts[pathParts.length-1];
 
                                     if (FileReaderWriter.hasFile(fileName) == null) {
@@ -181,7 +218,7 @@ public class InputThread extends Thread implements Terminatable {
                     }
                 }
             } catch (Exception e) {
-
+                System.err.println(e);
             }            
         }
     }
