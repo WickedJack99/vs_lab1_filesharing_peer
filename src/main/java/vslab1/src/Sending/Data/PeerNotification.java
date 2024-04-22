@@ -37,8 +37,10 @@ public record PeerNotification(Peer sender, Peer receiver) implements Sendable {
             fileList += file.getKey() + ",";
         }
 
-        // Remove last comma
-        fileList = fileList.substring(0, fileList.length() - 2);
+        // Remove last comma if fileList contains at least one file that has name of one char
+        if (fileList.length() >= 2) {
+            fileList = fileList.substring(0, fileList.length() - 1);
+        }
 
         String response = 
             "{\"peer\":\"\"" +
