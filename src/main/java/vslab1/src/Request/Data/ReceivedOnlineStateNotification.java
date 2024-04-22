@@ -11,7 +11,7 @@ import vslab1.src.Sending.Data.EDataType;
 import vslab1.src.Sending.Data.OnlineStateNotification;
 import vslab1.src.Timeout.JobList;
 
-public record OnlineStateNotificationRequest(Peer sender, Peer receiver, JobList jobList) implements Requestable {
+public record ReceivedOnlineStateNotification(Peer sender, Peer receiver, JobList jobList) implements Requestable {
 
     @Override
     public EDataType getType() {
