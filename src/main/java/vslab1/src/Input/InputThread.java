@@ -18,7 +18,6 @@ import vslab1.src.Sending.Data.PullFileRequest;
 import vslab1.src.Timeout.JobList;
 import vslab1.src.Timeout.TimeoutJob;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
