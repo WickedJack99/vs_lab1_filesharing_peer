@@ -3,3 +3,5 @@ target
 *.zip
 screens
 *.jar
+screens_lab1
+.vscode
