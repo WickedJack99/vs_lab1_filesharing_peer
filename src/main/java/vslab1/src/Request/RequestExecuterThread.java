@@ -85,14 +85,17 @@ public class RequestExecuterThread extends Thread implements Terminatable {
                 }
             }
             if (receivedData.has("join")) {
-                return new ReceivedJoinRequest(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
+                Peer sender = parseIPPortField(receivedData);
+                return new ReceivedJoinRequest(sender, FileReaderWriter.getThisPeer(EUpdateFlag.Update));
             }
             if (receivedData.has("peerJoined")) {
-                return new ReceivedPeerJoinedNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.Update));
+                Peer sender = parseIPPortField(receivedData);
+                return new ReceivedPeerJoinedNotification(sender, FileReaderWriter.getThisPeer(EUpdateFlag.Update));
             }
             if (receivedData.has("peer")) {
+                Peer sender = parseIPPortField(receivedData);
                 JSONArray files = receivedData.getJSONArray("files");
-                return new ReceivedPeerNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate), files);
+                return new ReceivedPeerNotification(sender, FileReaderWriter.getThisPeer(EUpdateFlag.Update), files);
             }
             if (receivedData.has("leave")) {
                 return new ReceivedLeaveNotification(parseIPPortField(receivedData), FileReaderWriter.getThisPeer(EUpdateFlag.DoNotUpdate));
