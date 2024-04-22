@@ -277,10 +277,25 @@ public class FileReaderWriter {
                 }
 
                 if (containsPeer == false) {
-                    JSONObject peerObject = new JSONObject(
+                    String newPeerAsString =
                         "{\"ipAddress\":\"" + peerToUpdate.ipAddress() + 
                         "\",\"port\":" + peerToUpdate.port() + 
-                        ",\"files\":[],\"onlineStatus\":\"offline\"}");
+                        ",\"files\":[";
+                    if (peerToUpdate.filesMap() != null) {
+                        for (Map.Entry<String, String> file : peerToUpdate.filesMap().entrySet()) {
+                            JSONObject fileObject = new JSONObject();
+                            fileObject.put("fileName", file.getKey());
+                            fileObject.put("filePath", file.getValue());
+                            
+                            newPeerAsString += fileObject.toString() + ",";
+                        }
+                        // Remove last comma if fileList contains at least one file that has name of one char
+                        if (newPeerAsString.endsWith(",")) {
+                            newPeerAsString = newPeerAsString.substring(0, newPeerAsString.length() - 1);
+                        }
+                    }
+                    newPeerAsString += "],\"onlineStatus\":\"" + peerToUpdate.onlineStateToString() + "\"}";
+                    JSONObject peerObject = new JSONObject(newPeerAsString);
                     peersJSONArray.put(peerObject);
                 }
 
