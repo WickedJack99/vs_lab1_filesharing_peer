@@ -54,7 +54,9 @@ public class InputThread extends Thread implements Terminatable {
 
     @Override
     public void run() {
-        System.out.println("This peer is online and ready to take commands.\n");
+        System.out.println("-----------------------------------------------");
+        System.out.println("This peer is online and ready to take commands.");
+        System.out.println("-----------------------------------------------");
         while (inputThreadRunning) {
             try {
                 System.out.println("Enter command:");
@@ -218,7 +220,8 @@ public class InputThread extends Thread implements Terminatable {
                 }
             } catch (Exception e) {
                 System.err.println(e);
-            }            
+            }   
+            System.out.println("-----------------------------------------------");         
         }
     }
 
