@@ -339,4 +339,12 @@ public class FileReaderWriter {
             return content;
         }
     }
+
+    public static String getFileSeparatorRegex() {
+        if (File.separator.equals("\\")) {
+            return "\\\\";
+        } else {
+            return File.separator;
+        }
+    }
 }
